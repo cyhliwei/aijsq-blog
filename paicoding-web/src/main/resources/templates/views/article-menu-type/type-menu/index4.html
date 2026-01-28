@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>聪明的 Vue.js + Thymeleaf 树形菜单</title>
+
+  <!-- Element UI CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <style>
+    [v-cloak] {
+      display: none !important;
+    }
+
+    /* 原有的所有样式保持不变 */
+    :root {
+      --primary-color: #1890ff;
+      --text-color: #333;
+      --border-color: #e8e8e8;
+      --bg-color: #f8f9fa;
+      --card-bg: #fff;
+      --hover-bg: #f5f5f5;
+      --text-primary: #333;
+      --text-secondary: #666;
+      --spacing-xs: 8px;
+      --spacing-sm: 12px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --border-radius-sm: 4px;
+      --border-radius-md: 8px;
+      --border-radius-lg: 12px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text-color);
+      background-color: #f0f2f5;
+      line-height: 1.6;
+    }
+
+    /* 页面容器 */
+    .article-page {
+      display: flex;
+      margin: 0 auto;
+      width: 88%;
+      justify-content: center;
+      padding: var(--spacing-lg);
+    }
+
+    .content-layout {
+      display: flex;
+      gap: calc(var(--spacing-md) * 2);
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    /* ... 其他所有样式保持和之前一样 ... */
+
+    /* 聪明提示 */
+    .smart-tip {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      z-index: 9999;
+      font-size: 14px;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- 聪明的数据注入方式 -->
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  // 聪明方案1：全局变量（最简单直接）
+  window.THYMELEAF_DATA = {
+    menus: [[${vo.menus}]],
+    // 聪明提示：使用 ?? 运算符处理null，保证前端不报错
+    user: /*[[${vo.user ?? null}]]*/ null,
+    settings: /*[[${vo.settings ?? {}}]]*/ {}
+  };
+
+  // 聪明方案2：自定义事件（更解耦）
+  document.addEventListener('DOMContentLoaded', function() {
+    const thymeleafDataEvent = new CustomEvent('thymeleafDataReady', {
+      detail: {
+        menus: /*[[${vo.menus}]]*/ null,
+        user: /*[[${vo.user ?? null}]]*/ null,
+        settings: /*[[${vo.settings ?? {}}]]*/ {}
+      }
+    });
+    document.dispatchEvent(thymeleafDataEvent);
+  });
+
+  // 聪明方案3：Promise方式（异步友好）
+  window.getThymeleafData = function() {
+    return new Promise((resolve) => {
+      resolve({
+        menus: /*[[${vo.menus}]]*/ [],
+        user: /*[[${vo.user ?? null}]]*/ null
+      });
+    });
+  };
+
+  // 聪明方案4：响应式对象（Vue友好）
+  window.reactiveThymeleafData = {
+    get menus() {
+      try {
+        return [[${vo.menus}]];
+      } catch {
+        return [];
+      }
+    },
+    get user() {
+      try {
+        return /*[[${vo.user}]]*/ null;
+      } catch {
+        return null;
+      }
+    }
+  };
+  /*]]>*/
+</script>
+
+<!-- Vue.js -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+<!-- Element UI JS -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+<div id="app" v-cloak>
+  <!-- 聪明的提示框 -->
+  <div class="smart-tip" v-if="showSmartTip">
+    💡 聪明的方案：Vue.js + Thymeleaf 完美集成！
+  </div>
+
+  <div class="article-page">
+    <div class="content-layout" id="articleBox">
+      <!-- 左侧导航栏 -->
+      <el-aside class="sidebar" :width="sidebarWidth">
+        <div class="sidebar-header">
+          <el-tooltip content="知识库目录" placement="right">
+            <i class="el-icon-notebook-2"></i>
+          </el-tooltip>
+          <div class="sidebar-controls">
+            <el-tooltip :content="isCollapsed ? '展开侧边栏' : '折叠侧边栏'" placement="right">
+              <i
+                      class="el-icon-s-unfold collapse-icon"
+                      @click="toggleSidebar"
+              ></i>
+            </el-tooltip>
+            <el-tooltip v-if="!isCollapsed" content="添加新菜单" placement="right">
+              <i
+                      class="el-icon-circle-plus add-icon"
+                      @click="addMenu"
+              ></i>
+            </el-tooltip>
+          </div>
+        </div>
+
+        <!-- 聪明的树形菜单组件 -->
+        <smart-tree-menu
+                :data="menus"
+                :collapsed="isCollapsed"
+                :default-expand-all="true"
+                :highlight-current="true"
+                @node-click="handleMenuClick"
+                @node-edit="handleEditMenu"
+                @node-delete="handleDeleteMenu"
+                ref="treeMenu"
+        ></smart-tree-menu>
+
+        <!-- 添加菜单按钮（底部） -->
+        <div
+                v-if="!isCollapsed"
+                class="add-menu-bottom"
+                @click="addMenu">
+          <i class="el-icon-circle-plus-outline"></i>
+          <span>添加新菜单</span>
+        </div>
+      </el-aside>
+
+      <!-- 主内容区 -->
+      <main class="article-main">
+        <!-- 聪明的数据展示 -->
+        <header class="article-header">
+          <div class="article-title">{{ currentMenu?.title || '请选择菜单' }}</div>
+
+          <div class="article-info">
+            <div class="author-info">
+              <img :src="currentMenu?.avatar || '/default-avatar.png'" alt="头像" class="author-avatar">
+              <div class="author-meta">
+                <span class="author-name">{{ currentMenu?.author || '系统' }}</span>
+                <div class="post-meta">
+                  <time class="publish-time">
+                    <i class="far fa-calendar-alt"></i>
+                    {{ currentMenu?.updateTime || formatDate(new Date()) }}
+                  </time>
+                  <span class="meta-divider">·</span>
+                  <span class="category">
+                                            <i class="fas fa-folder"></i>
+                                            {{ currentMenu?.category || '未分类' }}
+                                        </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-stats">
+              <div class="stat-item">
+                <i class="far fa-eye"></i>
+                <span>{{ currentMenu?.views || 0 }} 阅读</span>
+              </div>
+              <div class="stat-item">
+                <i class="far fa-clock"></i>
+                <span>{{ currentMenu?.readTime || 5 }} 分钟</span>
+              </div>
+              <div class="stat-item">
+                <i class="far fa-comment"></i>
+                <span>{{ currentMenu?.comments || 0 }} 评论</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- 文章内容 -->
+        <article class="article-content" v-html="currentMenu?.content || defaultContent">
+        </article>
+      </main>
+
+      <!-- 侧边栏目录 -->
+      <aside v-if="showSidebar" class="article-sidebar desktop-only">
+        <div class="toc-container">
+          <div class="toc-header">
+            <div class="title-wrapper">
+              <i class="fas fa-list"></i>
+              <span>目录</span>
+            </div>
+            <div class="progress-wrapper" :class="{ completed: readProgress === 100 }">
+              <i class="fas fa-book-reader"></i>
+              <span class="progress-text">{{ readProgress }}%</span>
+            </div>
+          </div>
+          <div class="toc-content">
+            <div v-for="(item, index) in tocItems" :key="index"
+                 class="toc-item"
+                 :class="{
+                                    'active': activeHeading === item.id,
+                                    [`level-${item.level}`]: true
+                                 }"
+                 @click="scrollToHeading(item.id)">
+              {{ item.text }}
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 注册聪明的树形菜单组件
+  Vue.component('smart-tree-menu', {
+    props: {
+      data: {
+        type: Array,
+        default: () => []
+      },
+      collapsed: {
+        type: Boolean,
+        default: false
+      },
+      defaultExpandAll: {
+        type: Boolean,
+        default: false
+      },
+      highlightCurrent: {
+        type: Boolean,
+        default: true
+      },
+      currentKey: {
+        type: [String, Number],
+        default: ''
+      }
+    },
+    data() {
+      return {
+        currentId: this.currentKey,
+        expandedKeys: this.defaultExpandAll ? this.getAllKeys(this.data) : []
+      };
+    },
+    computed: {
+      // 聪明的数据处理
+      processedData() {
+        // 如果没有数据，返回空数组
+        if (!this.data || !Array.isArray(this.data)) {
+          return [];
+        }
+
+        // 聪明处理：如果数据是字符串，尝试解析JSON
+        if (typeof this.data === 'string') {
+          try {
+            return JSON.parse(this.data);
+          } catch (e) {
+            console.error('聪明的提示：菜单数据解析失败，请检查数据格式');
+            return [];
+          }
+        }
+
+        return this.data;
+      }
+    },
+    watch: {
+      currentKey(val) {
+        this.currentId = val;
+      },
+      defaultExpandAll(val) {
+        if (val) {
+          this.expandedKeys = this.getAllKeys(this.data);
+        }
+      }
+    },
+    methods: {
+      // 获取所有节点key
+      getAllKeys(data) {
+        const keys = [];
+        const traverse = (items) => {
+          items.forEach(item => {
+            keys.push(item.id);
+            if (item.children && item.children.length > 0) {
+              traverse(item.children);
+            }
+          });
+        };
+        traverse(data);
+        return keys;
+      },
+
+      // 展开/收起节点
+      toggleNode(id) {
+        const index = this.expandedKeys.indexOf(id);
+        if (index > -1) {
+          this.expandedKeys.splice(index, 1);
+        } else {
+          this.expandedKeys.push(id);
+        }
+      },
+
+      // 点击节点
+      handleNodeClick(node) {
+        this.currentId = node.id;
+        this.$emit('node-click', node);
+      },
+
+      // 编辑节点
+      handleNodeEdit(node, e) {
+        e.stopPropagation();
+        this.$emit('node-edit', node);
+      },
+
+      // 删除节点
+      handleNodeDelete(node, e) {
+        e.stopPropagation();
+        this.$emit('node-delete', node);
+      },
+
+      // 渲染节点的聪明方法
+      renderNode(item, level = 0) {
+        const hasChildren = item.children && item.children.length > 0;
+        const isExpanded = this.expandedKeys.includes(item.id);
+        const isCurrent = this.highlightCurrent && this.currentId === item.id;
+
+        return `
+                        <div class="menu-node" data-id="${item.id}" data-level="${level}">
+                            <div class="node-content ${isCurrent ? 'active' : ''}"
+                                 style="padding-left: ${level * 20}px"
+                                 onclick="this.closest('.smart-tree-menu').__vue__.handleNodeClick(${JSON.stringify(item)})">
+                                <span class="expand-icon"
+                                      style="visibility: ${hasChildren ? 'visible' : 'hidden'}"
+                                      onclick="event.stopPropagation(); this.closest('.smart-tree-menu').__vue__.toggleNode(${item.id})">
+                                    ${hasChildren ? (isExpanded ? '▼' : '▶') : '·'}
+                                </span>
+                                <i class="${item.icon || 'el-icon-document'}"></i>
+                                <span class="node-title">${item.title}</span>
+                                ${!this.collapsed ? `
+                                    <div class="node-actions">
+                                        <i class="el-icon-edit edit-icon"
+                                           title="编辑"
+                                           onclick="event.stopPropagation(); this.closest('.smart-tree-menu').__vue__.handleNodeEdit(${JSON.stringify(item)}, event)"></i>
+                                        <i class="el-icon-delete delete-icon"
+                                           title="删除"
+                                           onclick="event.stopPropagation(); this.closest('.smart-tree-menu').__vue__.handleNodeDelete(${JSON.stringify(item)}, event)"></i>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${hasChildren && isExpanded ? `
+                                <div class="node-children">
+                                    ${item.children.map(child => this.renderNode(child, level + 1)).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+      }
+    },
+    render(createElement) {
+      // 聪明的渲染策略：使用template或createElement
+      if (this.collapsed) {
+        return createElement('div', { class: 'collapsed-menu' }, [
+          this.processedData.map(item =>
+                  createElement('div', {
+                    class: 'collapsed-menu-item',
+                    on: {
+                      click: () => this.handleNodeClick(item)
+                    }
+                  }, [
+                    createElement('i', { class: item.icon || 'el-icon-document' })
+                  ])
+          )
+        ]);
+      } else {
+        return createElement('div', {
+          class: 'smart-tree-menu',
+          ref: 'treeContainer'
+        }, [
+          createElement('div', {
+            domProps: {
+              innerHTML: this.processedData.map(item => this.renderNode(item)).join('')
+            }
+          })
+        ]);
+      }
+    },
+    mounted() {
+      // 聪明的挂载后处理
+      if (this.defaultExpandAll) {
+        this.expandedKeys = this.getAllKeys(this.processedData);
+      }
+
+      // 如果有关联的当前节点，自动展开其父节点
+      if (this.currentId) {
+        this.expandToNode(this.currentId);
+      }
+    }
+  });
+
+  // 创建Vue实例
+  new Vue({
+    el: '#app',
+    data() {
+      return {
+        // 聪明方案1：直接从全局变量获取Thymeleaf数据
+        menus: window.THYMELEAF_DATA?.menus || [],
+
+        // 聪明方案2：从响应式对象获取
+        // menus: window.reactiveThymeleafData?.menus || [],
+
+        // 或者使用Promise方式（更异步友好）
+        // menus: [], // 在created/mounted中获取
+
+        isCollapsed: false,
+        showSidebar: true,
+        currentMenu: null,
+        readProgress: 0,
+        tocItems: [],
+        activeHeading: '',
+        sidebarWidth: '260px',
+        defaultContent: `
+                        <h2>💡 聪明的 Vue.js + Thymeleaf 集成方案</h2>
+                        <p>这个页面展示了如何聪明地将 Thymeleaf 后端数据无缝集成到 Vue.js 前端应用中。</p>
+
+                        <h3>核心优势：</h3>
+                        <ul>
+                            <li><strong>数据注入零延迟</strong>：Thymeleaf 在服务端渲染时直接注入数据</li>
+                            <li><strong>完全解耦</strong>：前端组件化，后端只提供数据</li>
+                            <li><strong>开发体验优秀</strong>：热重载、响应式数据、组件复用</li>
+                            <li><strong>性能优化</strong>：减少不必要的 API 请求</li>
+                        </ul>
+
+                        <h3>使用方式：</h3>
+                        <pre><code>
+// 后端 Thymeleaf Controller
+@Controller
+public class MenuController {
+    @GetMapping("/page")
+    public String getPage(Model model) {
+        // 查询菜单数据
+        List<MenuVO> menus = menuService.getMenuTree();
+
+        // 聪明的数据注入
+        model.addAttribute("menus", menus);
+        model.addAttribute("user", userService.getCurrentUser());
+
+        return "page";
+    }
+}
+
+// 前端 Thymeleaf 模板
+&lt;script th:inline="javascript"&gt;
+    // 聪明的数据注入点
+    window.APP_DATA = {
+        menus: /*[[${menus}]]*/ [],
+        user: /*[[${user}]]*/ null
+    };
+&lt;/script&gt;
+                        </code></pre>
+
+                        <h3>聪明的提示：</h3>
+                        <div class="smart-tip" style="position: static; margin: 20px 0;">
+                            💡 记住：[[${vo.menus}]] 是 Thymeleaf 的黄金语法！
+                        </div>
+                    `,
+        showSmartTip: true
+      };
+    },
+    computed: {
+      // 计算属性：获取展开的菜单keys
+      expandedMenuKeys() {
+        const keys = [];
+        const traverse = (items) => {
+          items.forEach(item => {
+            if (item.children && item.children.length > 0) {
+              keys.push(item.id);
+              traverse(item.children);
+            }
+          });
+        };
+        traverse(this.menus);
+        return keys;
+      }
+    },
+    methods: {
+      // 切换侧边栏
+      toggleSidebar() {
+        this.isCollapsed = !this.isCollapsed;
+        this.sidebarWidth = this.isCollapsed ? '64px' : '260px';
+
+        // 聪明提示：3秒后自动隐藏
+        if (this.showSmartTip) {
+          setTimeout(() => {
+            this.showSmartTip = false;
+          }, 3000);
+        }
+      },
+
+      // 处理菜单点击
+      handleMenuClick(menu) {
+        console.log('聪明的菜单点击：', menu);
+        this.currentMenu = menu;
+
+        // 模拟加载文章内容
+        this.loadMenuContent(menu);
+      },
+
+      // 加载菜单内容
+      async loadMenuContent(menu) {
+        // 这里可以调用API获取具体内容
+        // 模拟异步加载
+        this.currentMenu = {
+          ...menu,
+          content: `
+                            <h2>${menu.title}</h2>
+                            <p>这是 ${menu.title} 的详细内容，由聪明的 Vue + Thymeleaf 方案渲染。</p>
+                            <p>菜单ID：${menu.id}</p>
+                            <p>加载时间：${new Date().toLocaleTimeString()}</p>
+
+                            <h3>数据来源：</h3>
+                            <p>菜单数据通过 Thymeleaf 的 <code>[[\${vo.menus}]]</code> 语法从后端注入到前端。</p>
+
+                            <h3>技术要点：</h3>
+                            <ul>
+                                <li>后端渲染时注入数据，避免前端二次请求</li>
+                                <li>Vue.js 响应式驱动视图更新</li>
+                                <li>Element UI 提供美观的组件</li>
+                                <li>完全组件化，易于维护</li>
+                            </ul>
+                        `,
+          author: '智能系统',
+          updateTime: new Date().toLocaleDateString(),
+          category: '技术文档',
+          views: Math.floor(Math.random() * 1000),
+          readTime: Math.floor(Math.random() * 10) + 1,
+          comments: Math.floor(Math.random() * 100)
+        };
+
+        // 生成目录
+        this.$nextTick(() => {
+          this.generateTOC();
+        });
+      },
+
+      // 编辑菜单
+      handleEditMenu(menu) {
+        alert(`聪明的编辑：${menu.title}\nID：${menu.id}`);
+      },
+
+      // 删除菜单
+      handleDeleteMenu(menu) {
+        if (confirm(`确定要删除 "${menu.title}" 吗？`)) {
+          // 这里可以调用删除API
+          console.log('删除菜单：', menu);
+        }
+      },
+
+      // 添加菜单
+      addMenu() {
+        alert('添加新菜单');
+      },
+
+      // 生成目录
+      generateTOC() {
+        setTimeout(() => {
+          const articleContent = document.querySelector('.article-content');
+          if (!articleContent) return;
+
+          const headings = articleContent.querySelectorAll('h2, h3, h4');
+          this.tocItems = Array.from(headings).map((heading, index) => {
+            const id = `heading-${index}-${Date.now()}`;
+            heading.id = id;
+            return {
+              id,
+              text: heading.textContent,
+              level: parseInt(heading.tagName.charAt(1))
+            };
+          });
+        }, 100);
+      },
+
+      // 滚动到标题
+      scrollToHeading(id) {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      },
+
+      // 格式化日期
+      formatDate(date) {
+        return date.toLocaleDateString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+      }
+    },
+    created() {
+      // 聪明方案3：使用Promise方式获取数据
+      if (window.getThymeleafData) {
+        window.getThymeleafData().then(data => {
+          if (data.menus && (!this.menus || this.menus.length === 0)) {
+            this.menus = data.menus;
+          }
+        });
+      }
+
+      // 聪明方案4：监听自定义事件
+      document.addEventListener('thymeleafDataReady', (event) => {
+        const data = event.detail;
+        if (data.menus && (!this.menus || this.menus.length === 0)) {
+          this.menus = data.menus;
+        }
+      });
+
+      // 聪明处理：如果menus是字符串，解析为JSON
+      if (typeof this.menus === 'string') {
+        try {
+          this.menus = JSON.parse(this.menus);
+        } catch (e) {
+          console.error('聪明的错误处理：菜单数据解析失败，使用默认数据');
+          this.menus = this.getDefaultMenus();
+        }
+      }
+
+      // 如果没有数据，使用默认数据（开发时用）
+      if (!this.menus || this.menus.length === 0) {
+        this.menus = this.getDefaultMenus();
+      }
+    },
+    mounted() {
+      // 默认选中第一个菜单
+      if (this.menus && this.menus.length > 0) {
+        this.handleMenuClick(this.menus[0]);
+      }
+
+      // 添加滚动监听
+      window.addEventListener('scroll', this.handleScroll);
+
+      // 聪明提示自动消失
+      setTimeout(() => {
+        this.showSmartTip = false;
+      }, 5000);
+    },
+    beforeDestroy() {
+      window.removeEventListener('scroll', this.handleScroll);
+    }
+  });
+</script>
+</body>
+</html>

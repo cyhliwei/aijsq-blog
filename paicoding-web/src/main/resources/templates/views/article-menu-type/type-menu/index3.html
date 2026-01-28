@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <!-- 引入Bootstrap (用于样式和基础交互) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 引入Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+  <!-- 引入jQuery (用于简单的DOM操作) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    /* 自定义侧边栏样式，模拟Element UI风格 */
+    .sidebar {
+      width: 250px;
+      height: 100vh;
+      background-color: #f8f9fa;
+      border-right: 1px solid #dee2e6;
+      transition: width 0.3s;
+      overflow-y: auto;
+      position: fixed;
+      left: 0;
+      top: 0;
+    }
+    .sidebar.collapsed {
+      width: 64px;
+    }
+    .sidebar-header {
+      padding: 1rem;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 60px;
+    }
+    .sidebar-controls {
+      display: flex;
+      gap: 10px;
+    }
+    .nav-link {
+      color: #333;
+      border-radius: 4px;
+      margin: 2px 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .nav-link:hover, .nav-link.active {
+      background-color: #e7f1ff;
+      color: #1890ff;
+    }
+    .nav-link[aria-expanded="true"] {
+      background-color: #f0f0f0;
+    }
+    .menu-icon {
+      margin-right: 10px;
+      font-size: 1.1rem;
+      min-width: 24px;
+      text-align: center;
+    }
+    .menu-actions {
+      margin-left: auto;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .nav-link:hover .menu-actions {
+      opacity: 1;
+    }
+    .submenu {
+      padding-left: 24px; /* 缩进表示层级 */
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    .toggle-icon {
+      margin-left: auto;
+      transition: transform 0.3s;
+    }
+    .toggle-icon.rotated {
+      transform: rotate(90deg);
+    }
+    .add-menu-bottom {
+      padding: 1rem;
+      border-top: 1px solid #dee2e6;
+      color: #1890ff;
+      cursor: pointer;
+      text-align: center;
+    }
+    .add-menu-bottom:hover {
+      background-color: #e7f1ff;
+    }
+
+    /* 限制最大显示层级 */
+    .level-3 .submenu {
+      display: none; /* 默认隐藏第三级及以后的子菜单 */
+    }
+    .level-3 .submenu.show {
+      display: block; /* 当父级被点击展开时显示 */
+    }
+  </style>
+</head>
+<body>
+<!-- 侧边栏主容器 -->
+<aside th:fragment="sidebar(menus, activeMenuId)" class="sidebar" id="appSidebar">
+  <div class="sidebar-header">
+    <span id="sidebarTitle">知识库目录</span>
+    <div class="sidebar-controls">
+      <!-- 折叠按钮 -->
+      <i class="bi bi-chevron-double-left collapse-icon"
+         style="cursor: pointer;"
+         onclick="toggleSidebar()"></i>
+      <!-- 添加菜单按钮 (仅展开时显示) -->
+      <i class="bi bi-plus-circle add-icon"
+         style="cursor: pointer; display: none;"
+         onclick="location.href='/chenxuyuan_paths/2'"></i>
+    </div>
+  </div>
+
+  <!-- 菜单容器: 使用Bootstrap的Nav组件作为基础 -->
+  <nav class="nav flex-column" id="sideMenu" style="padding: 8px;">
+    <!-- 递归渲染菜单树，初始层级为1 -->
+    <div th:each="menu : ${menus}">
+      <!-- 关键修改：直接传递参数，而不是使用 th:with -->
+      <div th:replace="~{::menuItem(${menu}, ${activeMenuId}, 1)}"></div>
+    </div>
+  </nav>
+
+  <!-- 底部添加按钮 -->
+  <div class="add-menu-bottom" onclick="location.href='/waytoagi-editor/0'">
+    <i class="bi bi-plus-circle"></i>
+    <span>添加新菜单</span>
+  </div>
+</aside>
+
+<!-- 定义递归片段: 用于渲染单个菜单项及其子项 -->
+<!-- 关键修改：添加 level 参数 -->
+<div th:fragment="menuItem(menu, activeMenuId, level)">
+  <!-- 调试信息（可以暂时保留，确认数据是否正确传递） -->
+  <div style="display:none; color:#ff0000; font-size:10px;">
+    处理菜单: ID=<span th:text="${menu?.id}">-</span>,
+    标题=<span th:text="${menu?.title}">-</span>,
+    层级=<span th:text="${level}">-</span>,
+    子菜单数=<span th:text="${menu?.children?.size() ?: 0}">0</span>
+  </div>
+
+  <div th:if="${menu != null}">
+    <!-- 判断是否显示：只显示前两级 -->
+    <div th:if="${level <= 2}">
+      <div th:if="${menu.children != null and !menu.children.isEmpty()}">
+        <!-- 有子菜单: 渲染为可折叠项 -->
+        <a class="nav-link d-flex justify-content-between align-items-center level-${level}"
+           th:id="'menu-' + ${menu.id}"
+           data-bs-toggle="collapse"
+           th:attr="data-bs-target='#submenu-' + ${menu.id}"
+           th:aria-expanded="${level == 1} ? 'true' : 'false'" role="button"
+           th:data-menu-id="${menu.id}"
+           th:data-menu-path="@{'/sys/aijsqMenu/' + ${menu.type} + '/' + ${menu.id}}">
+          <div>
+            <i th:class="${menu.icon} ?: 'bi bi-folder'" class="menu-icon"></i>
+            <span th:text="${menu.title}">菜单名称</span>
+          </div>
+          <!-- 只在有子菜单且是前两级时显示箭头 -->
+          <i th:if="${level <= 2}" class="bi bi-chevron-right toggle-icon"></i>
+        </a>
+        <!-- 子菜单容器：第一级默认展开，第二级默认折叠 -->
+        <div th:id="'submenu-' + ${menu.id}"
+             th:class="'collapse submenu level-' + ${level} + (${level == 1} ? ' show' : '')">
+          <!-- 递归调用自身，渲染子菜单，层级+1 -->
+          <div th:each="child : ${menu.children}">
+            <!-- 关键修改：直接传递参数 -->
+            <div th:replace="~{::menuItem(${child}, ${activeMenuId}, ${level + 1})}"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 没有子菜单: 渲染为最终菜单项 -->        <!-- 关键修改：修复 th:href 语法 -->
+      <a th:unless="${menu.children != null and !menu.children.isEmpty()}"
+         class="nav-link d-flex justify-content-between align-items-center level-${level}"
+         th:id="'menu-' + ${menu.id}"
+         th:classappend="${menu.id == activeMenuId} ? 'active' : ''"
+         th:href="@{'/sys/aijsqMenu/' + ${menu.type} + '/' + ${menu.id}}"
+         th:data-menu-id="${menu.id}"
+         th:data-menu-path="@{'/sys/aijsqMenu/' + ${menu.type} + '/' + ${menu.id}}" style="color: #0f0f0f">
+      <div>
+        <i th:class="${menu.icon} ?: 'bi bi-file-earmark-text'" class="menu-icon"></i>
+        <span th:text="${menu.title}">子菜单</span>
+      </div>
+      <!-- 编辑按钮 -->
+      <div class="menu-actions">
+        <i class="bi bi-pencil-square edit-icon"
+           style="cursor: pointer; font-size: 0.9rem; color: #6c757d;"
+           th:onclick="handleEditMenu(${menu.id}, event)"></i>
+      </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- 引入Bootstrap JS (用于折叠功能) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // 侧边栏折叠状态
+  let isSidebarCollapsed = false;
+
+  // 菜单点击处理函数 - 更新中间内容
+  function handleMenuClick(menuElement) {
+    const menuId = menuElement.getAttribute('data-menu-id');
+    const menuPath = menuElement.getAttribute('data-menu-path');
+    console.log('点击菜单:', menuId, '路径:', menuPath);
+
+    // 1. 更新活动菜单样式
+    document.querySelectorAll('.nav-link.active').forEach(el => {
+      el.classList.remove('active');
+    });
+    const currentMenu = document.getElementById('menu-' + menuId);
+    if (currentMenu) {
+      currentMenu.classList.add('active');
+    }
+
+    // 2. 加载对应菜单的内容到中间区域
+    loadMenuContent(menuId, menuPath);
+
+    // 3. 更新浏览器URL（可选）
+    if (menuPath && menuPath !== '#') {
+      window.history.pushState({menuId: menuId}, '', menuPath);
+    }
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const sidebarTitle = document.getElementById('sidebarTitle');
+    const addIcon = document.querySelector('.add-icon');
+    const bottomBtn = document.querySelector('.add-menu-bottom span');
+
+    isSidebarCollapsed = !isSidebarCollapsed;
+    sidebar.classList.toggle('collapsed', isSidebarCollapsed);
+
+    // 控制元素的显示/隐藏
+    if (isSidebarCollapsed) {
+      sidebarTitle.style.display = 'none';
+      addIcon.style.display = 'none';
+      if (bottomBtn) bottomBtn.style.display = 'none';
+      // 折叠时，也收起所有展开的子菜单
+      document.querySelectorAll('.collapse.show').forEach(el => {
+        const collapseInstance = bootstrap.Collapse.getInstance(el);
+        if (collapseInstance) {
+          collapseInstance.hide();
+        }
+      });
+    } else {
+      sidebarTitle.style.display = 'block';
+      addIcon.style.display = 'inline-block';
+      if (bottomBtn) bottomBtn.style.display = 'inline';
+    }
+  }
+
+  // 加载菜单内容到中间区域
+  function loadMenuContent(menuId, menuPath) {
+    // 这里需要根据你的实际项目来实现
+    // 示例：通过AJAX加载内容
+
+    if (!menuPath || menuPath === '#') {
+      // 如果没有路径，可能是目录菜单，不加载内容
+      console.log('这是目录菜单，不加载具体内容');
+      return;
+    }
+
+    // 显示加载状态
+    const contentArea = document.querySelector('.article-content-inter-wrap');
+    if (contentArea) {
+      contentArea.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2">加载中...</p></div>';
+    }
+
+    // 实际项目中，这里应该是AJAX请求
+    // fetch(menuPath + '?ajax=true')
+    //   .then(response => response.text())
+    //   .then(html => {
+    //     if (contentArea) {
+    //       contentArea.innerHTML = html;
+    //     }
+    //   })
+    //   .catch(error => {
+    //     console.error('加载内容失败:', error);
+    //     if (contentArea) {
+    //       contentArea.innerHTML = '<div class="alert alert-danger">加载内容失败</div>';
+    //     }
+    //   });
+
+    // 示例：简单显示内容
+    setTimeout(() => {
+      if (contentArea) {
+        contentArea.innerHTML = `
+          <div class="article-content">
+            <h1>菜单 ${menuId} 的内容</h1>
+            <p>这是从菜单 ${menuId} 加载的内容。</p>
+            <p>路径：${menuPath}</p>
+            <p>实际项目中，这里会显示文章、文档或其他内容。</p>
+          </div>
+        `;
+      }
+    }, 500);
+  }
+
+  // 编辑菜单处理
+  function handleEditMenu(menuId, event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    console.log('编辑菜单:', menuId);
+    // 跳转到编辑页面
+    window.location.href = '/waytoagi-editor/' + menuId;
+  }
+
+  // 初始化
+  document.addEventListener('DOMContentLoaded', function() {
+    // 事件委托：监听菜单容器的点击事件
+    const sideMenu = document.getElementById('sideMenu');
+    if (sideMenu) {
+      sideMenu.addEventListener('click', function(event) {
+        let target = event.target;
+        // 向上查找最近的具有data-menu-id的<a>标签
+        while (target && target !== this) {
+          if (target.matches('a[data-menu-id]')) {
+            break;
+          }
+          target = target.parentElement;
+        }
+        if (target && target.matches('a[data-menu-id]')) {
+          event.preventDefault();
+          event.stopPropagation();
+          handleMenuClick(target);
+        }
+      });
+    }
+
+    // 为所有可折叠菜单项添加事件，旋转箭头图标（这里单独处理，因为不需要触发handleMenuClick）
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
+      // 初始设置箭头方向
+      const icon = button.querySelector('.toggle-icon');
+      if (icon) {
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        icon.classList.toggle('rotated', isExpanded);
+      }
+
+      // 点击时旋转箭头
+      button.addEventListener('click', function(e) {
+        // 如果点击的是菜单项本身（不是箭头），则阻止事件冒泡到父元素的handleMenuClick？但是我们已经用事件委托，并且会判断target，所以这里不需要阻止冒泡到sideMenu。
+        // 但是，我们需要注意，点击可折叠菜单项时，Bootstrap会处理折叠，我们只需要旋转箭头。
+        const icon = this.querySelector('.toggle-icon');
+        if (icon) {
+          // 等待Bootstrap切换完成后再更新箭头
+          setTimeout(() => {
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            icon.classList.toggle('rotated', isExpanded);
+          }, 10);
+        }
+      });
+    });
+
+    // 初始化加载第一个菜单的内容（如果有活动菜单）
+    const activeMenu = document.querySelector('.nav-link.active');
+    if (activeMenu) {
+      const menuId = activeMenu.getAttribute('data-menu-id');
+      const menuPath = activeMenu.getAttribute('data-menu-path') || '#';
+      loadMenuContent(menuId, menuPath);
+    } else {
+      // 如果没有活动菜单，加载默认内容
+      loadMenuContent(1, '#');
+    }
+  });
+</script>
+</body>
+</html>

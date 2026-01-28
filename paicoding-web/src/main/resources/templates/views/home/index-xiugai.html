@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<div th:replace="components/layout/header :: head(~{::title}, ~{}, ~{})">
+  <title th:text="${global.siteInfo.websiteName}">AI技术圈 - AI领域的资源库、学习社区和趋势观察站</title>
+</div>
+<link href="/css/views/home.css" th:href="${global.siteInfo.oss + '/css/views/home.css'}" rel="stylesheet"/>
+<link href="/css/views/home-modern.css" th:href="${global.siteInfo.oss + '/css/views/home-modern.css'}" rel="stylesheet"/>
+
+<body id="body">
+<!-- 导航栏 -->
+<!--<div th:replace="components/layout/navbar :: navbar"></div>-->
+
+<!-- 现代化首页内容 -->
+<div class="modern-home">
+  <!-- Hero区域 -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text">
+          <span class="hero-tag">引领AI学习新时代</span>
+          <h1 class="hero-title">
+            探索
+            <span class="text-gradient">人工智能的</span>
+            <br />
+            无限可能
+          </h1>
+          <p class="hero-description">
+            AI技术圈为您提供最新的AI资讯、实用教程、工具评测和系统学习路径，
+            助力您在AI时代保持竞争力。
+          </p>
+
+          <!-- 搜索框 -->
+          <div class="hero-search">
+            <div class="search-input-wrapper">
+              <input type="text" placeholder="搜索AI工具、教程或资讯..." class="search-input" id="searchInput"/>
+              <button class="search-btn" onclick="handleSearch()">
+                <i class="icon-search"></i>
+              </button>
+            </div>
+            <p class="search-hint">
+              热门搜索：<a href="/search?q=ChatGPT" class="search-link">ChatGPT</a> ·
+              <a href="/search?q=Midjourney" class="search-link">Midjourney</a> ·
+              <a href="/search?q=Stable Diffusion" class="search-link">Stable Diffusion</a>
+            </p>
+          </div>
+
+          <!-- 统计数据 -->
+          <div class="stats-container">
+            <div class="stat-item">
+              <div class="stat-number">500+</div>
+              <div class="stat-label">AI工具评测</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">1000+</div>
+              <div class="stat-label">教程文章</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">50K+</div>
+              <div class="stat-label">学习用户</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero轮播图 -->
+        <div class="hero-carousel">
+          <div class="carousel-container">
+            <div class="carousel-slides">
+              <div class="slide active" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+                <div class="slide-overlay"></div>
+                <div class="slide-text">
+                  <h3>掌握AI，从学习开始</h3>
+                  <p>系统化AI学习路径，从入门到精通</p>
+                  <button class="slide-btn">了解更多</button>
+                </div>
+              </div>
+              <div class="slide" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
+                <div class="slide-overlay"></div>
+                <div class="slide-text">
+                  <h3>最新AI工具评测</h3>
+                  <p>发现最适合你的AI工具</p>
+                  <button class="slide-btn">了解更多</button>
+                </div>
+              </div>
+              <div class="slide" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
+                <div class="slide-overlay"></div>
+                <div class="slide-text">
+                  <h3>AI技术深度解析</h3>
+                  <p>前沿技术分析与实战指南</p>
+                  <button class="slide-btn">了解更多</button>
+                </div>
+              </div>
+            </div>
+            <div class="carousel-dots">
+              <span class="dot active" onclick="currentSlide(1)"></span>
+              <span class="dot" onclick="currentSlide(2)"></span>
+              <span class="dot" onclick="currentSlide(3)"></span>
+            </div>
+          </div>
+
+          <!-- 趋势标签 -->
+          <div class="trend-tags">
+            <span class="trend-tag">AI绘画</span>
+            <span class="trend-tag">大语言模型</span>
+            <span class="trend-tag">自动化</span>
+            <span class="trend-tag">AI编程</span>
+            <span class="trend-tag">提示词工程</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 今日AI热点 -->
+  <section class="news-section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">今日AI热点</h2>
+          <p class="section-subtitle">了解最新的AI动态与技术突破</p>
+        </div>
+        <a href="/ai-news" class="view-all-btn">
+          查看全部 <i class="icon-arrow-right"></i>
+        </a>
+      </div>
+
+      <!-- 分类筛选 -->
+      <div class="category-filter">
+        <button class="filter-btn active" onclick="changeCategory('all')">
+          全部 <span class="count-badge">156</span>
+        </button>
+        <button class="filter-btn" onclick="changeCategory('news')">
+          AI快讯 <span class="count-badge">89</span>
+        </button>
+        <button class="filter-btn" onclick="changeCategory('analysis')">
+          深度解读 <span class="count-badge">45</span>
+        </button>
+        <button class="filter-btn" onclick="changeCategory('report')">
+          行业报告 <span class="count-badge">18</span>
+        </button>
+        <button class="filter-btn" onclick="changeCategory('policy')">
+          政策动态 <span class="count-badge">12</span>
+        </button>
+      </div>
+
+      <!-- 新闻网格 -->
+      <div class="news-grid">
+        <div class="news-card">
+          <div class="news-header">
+            <span class="news-tag hot">AI快讯</span>
+            <span class="news-time">2小时前</span>
+          </div>
+          <h3 class="news-title">OpenAI发布GPT-4.5，推理能力大幅提升</h3>
+          <p class="news-excerpt">新版本在代码生成和逻辑推理方面有显著改进</p>
+          <div class="news-footer">
+            <div class="news-meta">
+              <span>张AI</span>
+              <span>· 5分钟阅读</span>
+            </div>
+            <div class="news-stats">
+              <span><i class="icon-view"></i> 12.5K</span>
+              <span><i class="icon-chat"></i> 128</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="news-card">
+          <div class="news-header">
+            <span class="news-tag">深度解读</span>
+            <span class="news-time">3小时前</span>
+          </div>
+          <h3 class="news-title">AI Agent技术突破：自主完成任务</h3>
+          <p class="news-excerpt">最新的AI Agent可以独立完成复杂的工作流程</p>
+          <div class="news-footer">
+            <div class="news-meta">
+              <span>李智能</span>
+              <span>· 8分钟阅读</span>
+            </div>
+            <div class="news-stats">
+              <span><i class="icon-view"></i> 8.9K</span>
+              <span><i class="icon-chat"></i> 76</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="news-card">
+          <div class="news-header">
+            <span class="news-tag">行业报告</span>
+            <span class="news-time">1天前</span>
+          </div>
+          <h3 class="news-title">国产AI芯片性能达到国际先进水平</h3>
+          <p class="news-excerpt">新一代AI芯片在能效比上表现突出</p>
+          <div class="news-footer">
+            <div class="news-meta">
+              <span>王创新</span>
+              <span>· 12分钟阅读</span>
+            </div>
+            <div class="news-stats">
+              <span><i class="icon-view"></i> 15.6K</span>
+              <span><i class="icon-chat"></i> 204</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 热门话题 -->
+      <div class="trending-topics">
+        <h3>热门话题</h3>
+        <div class="topic-tags">
+          <span class="topic-tag">#GPT-4.5 <span class="topic-count">128</span></span>
+          <span class="topic-tag">#Sora <span class="topic-count">95</span></span>
+          <span class="topic-tag">#Gemini Ultra <span class="topic-count">76</span></span>
+          <span class="topic-tag">#AI芯片 <span class="topic-count">64</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI学习路径 -->
+  <section class="learning-paths">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">AI学习路径</h2>
+          <p class="section-subtitle">选择你的职业方向，开始系统化学习</p>
+        </div>
+        <a href="/academy/learning-paths" class="view-all-btn">
+          查看全部路径 <i class="icon-arrow-right"></i>
+        </a>
+      </div>
+
+      <div class="paths-grid">
+        <div class="path-card">
+          <div class="path-header">
+            <div class="path-icon">
+              <i class="icon-picture"></i>
+            </div>
+            <div class="path-difficulty">
+              <span class="difficulty-tag primary">初级</span>
+            </div>
+          </div>
+
+          <h3 class="path-title">设计师AI路径</h3>
+          <p class="path-description">从AI辅助设计到AI原生设计</p>
+
+          <div class="path-meta">
+            <span><i class="icon-collection"></i> 12个课程</span>
+            <span><i class="icon-time"></i> 36小时</span>
+          </div>
+
+          <!-- 进度条 -->
+          <div class="path-progress">
+            <div class="progress-header">
+              <span>学习进度</span>
+              <span>65%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 65%"></div>
+            </div>
+          </div>
+
+          <div class="path-actions">
+            <a href="/academy/path/1" class="path-btn">开始学习</a>
+            <span class="completed-count">
+                  <i class="icon-success"></i> 4人已完成
+                </span>
+          </div>
+        </div>
+
+        <div class="path-card">
+          <div class="path-header">
+            <div class="path-icon">
+              <i class="icon-cpu"></i>
+            </div>
+            <div class="path-difficulty">
+              <span class="difficulty-tag warning">中级</span>
+            </div>
+          </div>
+
+          <h3 class="path-title">程序员AI路径</h3>
+          <p class="path-description">AI编程助手到AI应用开发</p>
+
+          <div class="path-meta">
+            <span><i class="icon-collection"></i> 15个课程</span>
+            <span><i class="icon-time"></i> 45小时</span>
+          </div>
+
+          <!-- 进度条 -->
+          <div class="path-progress">
+            <div class="progress-header">
+              <span>学习进度</span>
+              <span>30%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 30%"></div>
+            </div>
+          </div>
+
+          <div class="path-actions">
+            <a href="/academy/path/2" class="path-btn">开始学习</a>
+            <span class="completed-count">
+                  <i class="icon-success"></i> 5人已完成
+                </span>
+          </div>
+        </div>
+
+        <div class="path-card">
+          <div class="path-header">
+            <div class="path-icon">
+              <i class="icon-data"></i>
+            </div>
+            <div class="path-difficulty">
+              <span class="difficulty-tag primary">初级</span>
+            </div>
+          </div>
+
+          <h3 class="path-title">运营人员AI路径</h3>
+          <p class="path-description">AI内容创作到数据驱动运营</p>
+
+          <div class="path-meta">
+            <span><i class="icon-collection"></i> 10个课程</span>
+            <span><i class="icon-time"></i> 30小时</span>
+          </div>
+
+          <!-- 进度条 -->
+          <div class="path-progress">
+            <div class="progress-header">
+              <span>学习进度</span>
+              <span>80%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 80%"></div>
+            </div>
+          </div>
+
+          <div class="path-actions">
+            <a href="/academy/path/3" class="path-btn">开始学习</a>
+            <span class="completed-count">
+                  <i class="icon-success"></i> 3人已完成
+                </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 学习建议 -->
+      <div class="learning-suggestion">
+        <div class="suggestion-content">
+          <div>
+            <h3>不确定从何开始？</h3>
+            <p>完成我们的AI技能评估，获取个性化学习建议</p>
+          </div>
+          <a href="/skill-assessment" class="suggestion-btn">开始技能评估</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 热门AI教程 -->
+  <section class="tutorials-section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">热门AI教程</h2>
+          <p class="section-subtitle">精选实用教程，快速掌握AI技能</p>
+        </div>
+        <a href="/academy" class="view-all-btn">
+          更多教程 <i class="icon-arrow-right"></i>
+        </a>
+      </div>
+
+      <!-- 教程列表 -->
+      <div class="tutorials-list">
+        <div class="tutorial-card">
+          <a href="/academy/tutorial/1">
+            <div class="tutorial-content">
+              <div class="tutorial-main">
+                <div class="tutorial-tags">
+                  <span class="tutorial-tag featured">AI绘画</span>
+                  <span class="tutorial-tag difficulty-medium">中级</span>
+                  <span class="tutorial-tag premium">精选</span>
+                </div>
+
+                <h3 class="tutorial-title">Midjourney V6完整使用指南</h3>
+                <p class="tutorial-excerpt">从基础提示词到高级参数设置，掌握AI绘画核心技术</p>
+
+                <div class="tutorial-stats">
+                  <span><i class="icon-time"></i> 15分钟阅读</span>
+                  <span><i class="icon-view"></i> 12.5K</span>
+                  <span><i class="icon-star"></i> 856</span>
+                </div>
+              </div>
+
+              <div class="tutorial-sidebar">
+                <div class="author-info">
+                  <div class="author-avatar"></div>
+                  <div class="author-details">
+                    <div class="author-name">张AI</div>
+                    <div class="author-title">AI绘画专家</div>
+                  </div>
+                </div>
+                <a href="/academy/tutorial/1" class="tutorial-action">
+                  <i class="icon-reading"></i> 开始学习
+                </a>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="tutorial-card">
+          <a href="/academy/tutorial/2">
+            <div class="tutorial-content">
+              <div class="tutorial-main">
+                <div class="tutorial-tags">
+                  <span class="tutorial-tag featured">大语言模型</span>
+                  <span class="tutorial-tag difficulty-beginner">初级</span>
+                  <span class="tutorial-tag premium">精选</span>
+                </div>
+
+                <h3 class="tutorial-title">ChatGPT提示词工程实战</h3>
+                <p class="tutorial-excerpt">100+实用提示词模板，提升你的AI对话效率10倍</p>
+
+                <div class="tutorial-stats">
+                  <span><i class="icon-time"></i> 20分钟阅读</span>
+                  <span><i class="icon-view"></i> 18.7K</span>
+                  <span><i class="icon-star"></i> 1.2K</span>
+                </div>
+              </div>
+
+              <div class="tutorial-sidebar">
+                <div class="author-info">
+                  <div class="author-avatar"></div>
+                  <div class="author-details">
+                    <div class="author-name">李智能</div>
+                    <div class="author-title">LLM研究员</div>
+                  </div>
+                </div>
+                <a href="/academy/tutorial/2" class="tutorial-action">
+                  <i class="icon-reading"></i> 开始学习
+                </a>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- 教程分类 -->
+      <div class="tutorial-categories">
+        <h3>教程分类</h3>
+        <div class="categories-grid">
+          <div class="category-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+            <div class="category-icon">🎨</div>
+            <div class="category-name">AI绘画</div>
+            <div class="category-count">156个教程</div>
+          </div>
+          <div class="category-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
+            <div class="category-icon">🤖</div>
+            <div class="category-name">大语言模型</div>
+            <div class="category-count">89个教程</div>
+          </div>
+          <div class="category-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
+            <div class="category-icon">🎥</div>
+            <div class="category-name">AI视频</div>
+            <div class="category-count">42个教程</div>
+          </div>
+          <div class="category-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)">
+            <div class="category-icon">💻</div>
+            <div class="category-name">AI编程</div>
+            <div class="category-count">67个教程</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI工具推荐 -->
+  <section class="tools-section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">热门AI工具</h2>
+          <p class="section-subtitle">精选实用AI工具推荐</p>
+        </div>
+        <a href="/tools" class="view-all-btn">
+          更多工具 <i class="icon-arrow-right"></i>
+        </a>
+      </div>
+
+      <div class="tools-list">
+        <div class="tool-card">
+          <a href="/tools/1">
+            <div class="tool-content">
+              <div class="tool-header">
+                <h3 class="tool-name">ChatGPT</h3>
+                <div class="tool-badges">
+                  <span class="tool-badge freemium">免费+付费</span>
+                </div>
+              </div>
+
+              <p class="tool-description">最流行的AI对话助手</p>
+
+              <div class="tool-footer">
+                <span class="tool-category">文本生成</span>
+                <div class="tool-rating">
+                  <div class="stars">★★★★★</div>
+                  <span class="rating-score">4.9</span>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="tool-card">
+          <a href="/tools/2">
+            <div class="tool-content">
+              <div class="tool-header">
+                <h3 class="tool-name">Midjourney</h3>
+                <div class="tool-badges">
+                  <span class="tool-badge paid">付费</span>
+                </div>
+              </div>
+
+              <p class="tool-description">高质量的AI图像生成</p>
+
+              <div class="tool-footer">
+                <span class="tool-category">图像生成</span>
+                <div class="tool-rating">
+                  <div class="stars">★★★★★</div>
+                  <span class="rating-score">4.8</span>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="tool-card">
+          <a href="/tools/3">
+            <div class="tool-content">
+              <div class="tool-header">
+                <h3 class="tool-name">Claude</h3>
+                <div class="tool-badges">
+                  <span class="tool-badge new">新</span>
+                  <span class="tool-badge freemium">免费+付费</span>
+                </div>
+              </div>
+
+              <p class="tool-description">Anthropic的AI助手</p>
+
+              <div class="tool-footer">
+                <span class="tool-category">文本生成</span>
+                <div class="tool-rating">
+                  <div class="stars">★★★★★</div>
+                  <span class="rating-score">4.7</span>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- 工具分类 -->
+      <div class="tool-categories">
+        <h3>工具分类</h3>
+        <div class="category-tiles">
+          <div class="tool-category-tile">
+            <div class="category-icon">📝</div>
+            <div class="category-info">
+              <div class="category-name">文本生成</div>
+              <div class="category-count">45个工具</div>
+            </div>
+            <i class="icon-arrow-right"></i>
+          </div>
+          <div class="tool-category-tile">
+            <div class="category-icon">🎨</div>
+            <div class="category-info">
+              <div class="category-name">图像生成</div>
+              <div class="category-count">32个工具</div>
+            </div>
+            <i class="icon-arrow-right"></i>
+          </div>
+          <div class="tool-category-tile">
+            <div class="category-icon">🎥</div>
+            <div class="category-info">
+              <div class="category-name">视频生成</div>
+              <div class="category-count">18个工具</div>
+            </div>
+            <i class="icon-arrow-right"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI趋势观察 -->
+  <section class="trends-section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">AI趋势观察</h2>
+          <p class="section-subtitle">洞察AI技术发展动态</p>
+        </div>
+        <span class="trends-note">
+              <i class="icon-info"></i> 基于过去24小时内的搜索量、讨论热度和媒体报道
+            </span>
+      </div>
+
+      <div class="trends-grid">
+        <div class="trend-card">
+          <div class="trend-header">
+            <span class="trend-category">大语言模型</span>
+            <div class="trend-change up">
+              <i class="icon-up"></i> 42%
+            </div>
+          </div>
+          <h3 class="trend-keyword">GPT-4.5</h3>
+          <div class="trend-volume">125,000 搜索量</div>
+
+          <!-- 趋势条 -->
+          <div class="trend-bar">
+            <div class="bar-fill up" style="width: 42%"></div>
+          </div>
+        </div>
+
+        <div class="trend-card">
+          <div class="trend-header">
+            <span class="trend-category">AI应用</span>
+            <div class="trend-change up">
+              <i class="icon-up"></i> 38%
+            </div>
+          </div>
+          <h3 class="trend-keyword">AI Agent</h3>
+          <div class="trend-volume">89,000 搜索量</div>
+
+          <!-- 趋势条 -->
+          <div class="trend-bar">
+            <div class="bar-fill up" style="width: 38%"></div>
+          </div>
+        </div>
+
+        <div class="trend-card">
+          <div class="trend-header">
+            <span class="trend-category">AI技术</span>
+            <div class="trend-change up">
+              <i class="icon-up"></i> 35%
+            </div>
+          </div>
+          <h3 class="trend-keyword">多模态AI</h3>
+          <div class="trend-volume">76,000 搜索量</div>
+
+          <!-- 趋势条 -->
+          <div class="trend-bar">
+            <div class="bar-fill up" style="width: 35%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 底部信息 -->
+<div th:replace="components/layout/footer :: footer"></div>
+
+<script>
+  // 轮播图功能
+  let slideIndex = 0;
+  showSlides();
+
+  function showSlides() {
+    let i;
+    let slides = document.getElementsByClassName("slide");
+    let dots = document.getElementsByClassName("dot");
+    for (i = 0; i < slides.length; i++) {
+      slides[i].classList.remove("active");
+    }
+    slideIndex++;
+    if (slideIndex > slides.length) {slideIndex = 1}
+    for (i = 0; i < dots.length; i++) {
+      dots[i].classList.remove("active");
+    }
+    slides[slideIndex-1].classList.add("active");
+    dots[slideIndex-1].classList.add("active");
+    setTimeout(showSlides, 4000); // 每4秒切换一次
+  }
+
+  function currentSlide(n) {
+    slideIndex = n - 1;
+    showSlides();
+  }
+
+  // 分类筛选功能
+  function changeCategory(cat) {
+    // 更新激活状态
+    let buttons = document.getElementsByClassName("filter-btn");
+    for (let i = 0; i < buttons.length; i++) {
+      buttons[i].classList.remove("active");
+    }
+    event.target.classList.add("active");
+
+    // 这里可以添加分类筛选逻辑
+    console.log("切换到分类:", cat);
+  }
+
+  // 搜索功能
+  function handleSearch() {
+    const keyword = document.getElementById('searchInput').value.trim();
+    if (keyword) {
+      window.location.href = '/search?q=' + encodeURIComponent(keyword);
+    }
+  }
+
+  // 搜索框回车事件
+  document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  });
+
+  // 页面加载动画
+  document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('.hero-text, .news-card, .path-card, .tutorial-card, .tool-card, .trend-card');
+    elements.forEach((element, index) => {
+      element.style.animationDelay = `${index * 0.1}s`;
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>树形菜单 - HTML5整合版</title>
+
+  <!-- Element UI CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui@2.15.14/lib/theme-chalk/index.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <style>
+    :root {
+      --primary-color: #1890ff;
+      --text-color: #333;
+      --border-color: #e8e8e8;
+      --bg-color: #f8f9fa;
+      --card-bg: #fff;
+      --hover-bg: #f5f5f5;
+      --text-primary: #333;
+      --text-secondary: #666;
+      --spacing-xs: 8px;
+      --spacing-sm: 12px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --border-radius-sm: 4px;
+      --border-radius-md: 8px;
+      --border-radius-lg: 12px;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text-color);
+      background-color: #f0f2f5;
+      line-height: 1.6;
+    }
+
+    /* 页面容器 */
+    .article-page {
+      display: flex;
+      margin: 0 auto;
+      width: 88%;
+      justify-content: center;
+      padding: var(--spacing-lg);
+    }
+
+    .content-layout {
+      display: flex;
+      gap: calc(var(--spacing-md) * 2);
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .content-layout.center {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* 侧边栏样式 */
+    .sidebar {
+      background: var(--card-bg);
+      overflow-y: auto;
+      overflow-x: hidden;
+      transition: width 0.3s ease;
+      position: sticky;
+      top: 90px;
+      height: 100vh;
+      border-radius: 10px;
+      width: 260px;
+      min-width: 100px;
+      max-width: 400px;
+      box-shadow: var(--shadow-md);
+      flex-shrink: 0;
+    }
+
+    .sidebar.collapsed {
+      width: 100px;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-color);
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .collapse-icon,
+    .add-icon {
+      font-size: 18px;
+      cursor: pointer;
+      color: #666;
+      transition: color 0.3s;
+    }
+
+    .collapse-icon:hover,
+    .add-icon:hover {
+      color: var(--primary-color);
+    }
+
+    /* 特殊菜单项 */
+    .menu-item-highlight {
+      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+      padding: 12px 20px;
+      margin: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      color: #1976d2;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .menu-item-highlight:hover {
+      background: linear-gradient(135deg, #d1ecff 0%, #e8d4f0 100%);
+    }
+
+    .menu-item-highlight.collapsed {
+      padding: 12px;
+      justify-content: center;
+    }
+
+    .menu-icon {
+      margin-right: 8px;
+      font-size: 18px;
+    }
+
+    .menu-item-highlight.collapsed .menu-icon {
+      margin-right: 0;
+    }
+
+    /* 自定义菜单样式 */
+    .custom-menu {
+      border: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: calc(100vh - 120px);
+    }
+
+    .menu-item, .submenu-title {
+      height: 44px;
+      line-height: 44px;
+      font-size: 14px;
+      position: relative;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      cursor: pointer;
+      color: var(--text-color);
+      transition: all 0.3s;
+    }
+
+    .menu-item:hover, .submenu-title:hover {
+      background-color: var(--hover-bg);
+    }
+
+    .menu-item.active, .submenu-title.active {
+      color: var(--primary-color);
+      background-color: #e6f7ff;
+      font-weight: 500;
+    }
+
+    .menu-item i, .submenu-title i {
+      margin-right: 8px;
+      color: #666;
+      width: 16px;
+      text-align: center;
+    }
+
+    .menu-item.active i, .submenu-title.active i {
+      color: var(--primary-color);
+    }
+
+    .submenu-children {
+      margin-left: 20px;
+      border-left: 1px dashed var(--border-color);
+      padding-left: 10px;
+      overflow: hidden;
+    }
+
+    .submenu-children.collapsed {
+      display: none;
+    }
+
+    .menu-actions {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .menu-item:hover .menu-actions,
+    .submenu-title:hover .menu-actions {
+      opacity: 1;
+    }
+
+    .edit-icon {
+      color: #666;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.3s;
+    }
+
+    .edit-icon:hover {
+      color: var(--primary-color);
+    }
+
+    /* 底部添加按钮 */
+    .add-menu-bottom {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px;
+      background-color: #f5f5f5;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .add-menu-bottom:hover {
+      background-color: #e8f4ff;
+      color: var(--primary-color);
+    }
+
+    /* 主内容区样式 */
+    .article-main {
+      flex: 1;
+      background: var(--card-bg);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      min-height: calc(100vh - 48px);
+    }
+
+    .article-header {
+      padding: var(--spacing-lg) var(--spacing-xl);
+      position: relative;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--card-bg);
+    }
+
+    .article-title {
+      color: var(--text-primary);
+      font-size: 1.8em;
+      line-height: 1.4;
+      margin-bottom: var(--spacing-lg);
+      text-align: left;
+    }
+
+    .article-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+    }
+
+    .author-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+
+    .author-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(24, 144, 255, 0.2);
+      padding: 2px;
+      background: var(--card-bg);
+      transition: all 0.3s ease;
+    }
+
+    .author-avatar:hover {
+      transform: rotate(360deg);
+      border-color: var(--primary-color);
+    }
+
+    .author-meta {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .author-name {
+      color: var(--primary-color);
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      color: var(--text-secondary);
+      font-size: 0.9em;
+    }
+
+    .post-meta i {
+      color: var(--primary-color);
+      margin-right: 4px;
+    }
+
+    .meta-divider {
+      color: var(--text-secondary);
+      opacity: 0.5;
+    }
+
+    .category {
+      color: var(--primary-color);
+    }
+
+    .article-stats {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-lg);
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      color: var(--text-secondary);
+      font-size: 0.95em;
+    }
+
+    .stat-item i {
+      color: var(--primary-color);
+      font-size: 1.1em;
+    }
+
+    /* AI摘要 */
+    .ai-description {
+      margin: var(--spacing-md) var(--spacing-xl);
+      border-radius: var(--border-radius-lg);
+      background-image: linear-gradient(180deg, rgba(247, 232, 255, .54), rgba(191, 223, 255, .35));
+      border: 1px solid rgba(0, 150, 136, 0.1);
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .ai-header {
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      justify-content: flex-start;
+      color: #a855f7;
+      cursor: pointer;
+    }
+
+    .ai-header i {
+      font-size: 1.1em;
+    }
+
+    .ai-content {
+      padding: var(--spacing-md);
+      overflow: hidden;
+    }
+
+    .ai-description-text {
+      margin-top: var(--spacing-sm);
+      color: #8c8a8e;
+    }
+
+    /* 文章内容 */
+    .article-content {
+      padding: 0 calc(var(--spacing-md) * 2);
+      line-height: 1.8;
+      color: var(--text-primary);
+      font-size: 1.1em;
+    }
+
+    /* 侧边栏目录 */
+    .article-sidebar {
+      width: 280px;
+      flex-shrink: 0;
+    }
+
+    .toc-container {
+      position: sticky;
+      top: 90px;
+      background: var(--card-bg);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      transition: all 0.3s;
+      border: 1px solid var(--border-color);
+    }
+
+    .toc-header {
+      padding: var(--spacing-lg);
+      background: var(--hover-bg);
+      color: var(--text-primary);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      position: relative;
+      border-bottom: 1px solid var(--border-color);
+      justify-content: space-between;
+    }
+
+    .title-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .title-wrapper i {
+      color: var(--primary-color);
+      font-size: 1.1em;
+    }
+
+    .progress-wrapper {
+      font-size: 0.9em;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: 4px 8px;
+      background: rgba(24, 144, 255, 0.05);
+      border-radius: var(--border-radius-lg);
+      transition: all 0.3s ease;
+    }
+
+    .progress-wrapper i {
+      color: var(--primary-color);
+      font-size: 0.9em;
+    }
+
+    .progress-text {
+      font-variant-numeric: tabular-nums;
+      min-width: 3em;
+      text-align: right;
+    }
+
+    .progress-text::after {
+      content: '%';
+      margin-left: 2px;
+      opacity: 0.7;
+    }
+
+    .toc-content {
+      padding: var(--spacing-lg);
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .toc-item {
+      padding: var(--spacing-sm) var(--spacing-md);
+      margin: 2px 0;
+      cursor: pointer;
+      border-radius: var(--border-radius-sm);
+      color: var(--text-secondary);
+      transition: all 0.3s;
+      font-size: 0.95em;
+      line-height: 1.4;
+      position: relative;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-left: 16px;
+    }
+
+    .toc-item:hover {
+      color: var(--primary-color);
+      background: linear-gradient(90deg,
+      rgba(24, 144, 255, 0.05),
+      rgba(24, 144, 255, 0.02)
+      );
+      padding-left: 20px;
+    }
+
+    .toc-item.active {
+      color: var(--primary-color);
+      background: linear-gradient(90deg,
+      rgba(24, 144, 255, 0.1),
+      rgba(24, 144, 255, 0.05)
+      );
+      font-weight: 500;
+      padding-left: 20px;
+    }
+
+    .toc-item.level-1 {
+      font-weight: 500;
+      font-size: 1em;
+    }
+
+    .toc-item.level-2 {
+      font-size: 0.95em;
+    }
+
+    .toc-item.level-3 {
+      font-size: 0.9em;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 1200px) {
+      .article-page {
+        width: 95%;
+        padding: var(--spacing-md);
+      }
+
+      .article-sidebar {
+        display: none;
+      }
+    }
+
+    @media (max-width: 992px) {
+      .content-layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        max-height: 400px;
+        width: 100% !important;
+        max-width: 100%;
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .custom-menu {
+        height: 300px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .article-page {
+        width: 100%;
+        padding: var(--spacing-sm);
+      }
+
+      .article-header {
+        padding: var(--spacing-md);
+      }
+
+      .article-title {
+        font-size: 1.5em;
+      }
+
+      .article-info {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .article-stats {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .article-content {
+        padding: 0 var(--spacing-md);
+      }
+
+      .ai-description {
+        margin: var(--spacing-sm);
+      }
+    }
+
+    /* 展开收起动画 */
+    .expand-enter-active,
+    .expand-leave-active {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    .expand-enter-from,
+    .expand-leave-to {
+      opacity: 0;
+      height: 0;
+    }
+
+    .expand-enter-to,
+    .expand-leave-from {
+      opacity: 1;
+    }
+
+    /* 通用工具类 */
+    .desktop-only {
+      display: block;
+    }
+
+    @media (max-width: 992px) {
+      .desktop-only {
+        display: none;
+      }
+    }
+
+    /* 树形菜单相关 */
+    .expand-icon {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      text-align: center;
+      margin-right: 6px;
+      transition: transform 0.3s;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .expand-icon.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .expand-icon.hidden {
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+<div class="article-page" id="app">
+  <div class="content-layout" id="articleBox">
+    <!-- 左侧导航栏 -->
+    <aside class="sidebar" :class="{ collapsed: isCollapsed }">
+      <div class="sidebar-header">
+        <div class="tooltip" title="知识库目录">
+          <i class="el-icon-notebook-2"></i>
+        </div>
+        <div class="sidebar-controls">
+          <div class="tooltip" title="添加新菜单">
+            <i
+                    class="el-icon-circle-plus add-icon"
+                    @click="addMenu"
+            ></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 树形菜单 -->
+      <div class="custom-menu">
+        <!-- 动态渲染菜单 -->
+        <div v-for="item in menuItems" :key="item.id">
+          <div v-if="item.children && item.children.length > 0" class="submenu">
+            <div
+                    class="submenu-title"
+                    :class="{ active: activeMenu === String(item.id) }"
+                    @click="toggleSubmenu(item)"
+            >
+              <span class="expand-icon" :class="{ collapsed: !item.expanded }">▶</span>
+              <i :class="item.icon"></i>
+              <span>{{ item.title }}</span>
+              <div class="menu-actions" v-if="!isCollapsed">
+                <i
+                        class="el-icon-edit edit-icon"
+                        @click.stop="handleEditMenu(item)"
+                        title="编辑"
+                ></i>
+              </div>
+            </div>
+            <div class="submenu-children" :class="{ collapsed: !item.expanded }">
+              <div v-for="child in item.children" :key="child.id">
+                <div v-if="child.children && child.children.length > 0" class="submenu">
+                  <div
+                          class="submenu-title"
+                          :class="{ active: activeMenu === String(child.id) }"
+                          @click="toggleSubmenu(child)"
+                  >
+                    <span class="expand-icon" :class="{ collapsed: !child.expanded }">▶</span>
+                    <i :class="child.icon || 'el-icon-document'"></i>
+                    <span>{{ child.title }}</span>
+                    <div class="menu-actions" v-if="!isCollapsed">
+                      <i
+                              class="el-icon-edit edit-icon"
+                              @click.stop="handleEditMenu(child)"
+                              title="编辑"
+                      ></i>
+                    </div>
+                  </div>
+                  <div class="submenu-children" :class="{ collapsed: !child.expanded }">
+                    <div
+                            v-for="subChild in child.children"
+                            :key="subChild.id"
+                            class="menu-item"
+                            :class="{ active: activeMenu === String(subChild.id) }"
+                            @click="handleSubMenuClick(subChild)"
+                    >
+                      <i :class="subChild.icon || 'el-icon-tickets'"></i>
+                      <span>{{ subChild.title }}</span>
+                      <div class="menu-actions" v-if="!isCollapsed">
+                        <i
+                                class="el-icon-edit edit-icon"
+                                @click.stop="handleEditMenu(subChild)"
+                                title="编辑"
+                        ></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else>
+                  <div
+                          class="menu-item"
+                          :class="{ active: activeMenu === String(child.id) }"
+                          @click="handleSubMenuClick(child)"
+                  >
+                    <i :class="child.icon || 'el-icon-tickets'"></i>
+                    <span>{{ child.title }}</span>
+                    <div class="menu-actions" v-if="!isCollapsed">
+                      <i
+                              class="el-icon-edit edit-icon"
+                              @click.stop="handleEditMenu(child)"
+                              title="编辑"
+                      ></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else>
+            <div
+                    class="menu-item"
+                    :class="{ active: activeMenu === String(item.id) }"
+                    @click="handleMenuClick(item)"
+            >
+              <i :class="item.icon"></i>
+              <span>{{ item.title }}</span>
+              <div class="menu-actions" v-if="!isCollapsed">
+                <i
+                        class="el-icon-edit edit-icon"
+                        @click.stop="handleEditMenu(item)"
+                        title="编辑"
+                ></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 添加菜单按钮（底部） -->
+      <div
+              v-if="!isCollapsed"
+              class="add-menu-bottom"
+              @click="addMenu">
+        <i class="el-icon-circle-plus-outline"></i>
+        <span>添加新菜单</span>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="article-main">
+      <!-- 文章头部 -->
+      <header class="article-header">
+        <div class="article-title">{{ article.title }}</div>
+
+        <!-- 作者信息和元数据 -->
+        <div class="article-info">
+          <div class="author-info">
+            <img :src="article.avatar" alt="作者头像" class="author-avatar">
+            <div class="author-meta">
+              <span class="author-name">{{ article.nickname }}</span>
+              <div class="post-meta">
+                <time class="publish-time">
+                  <i class="far fa-calendar-alt"></i>
+                  {{ article.createTime }}
+                </time>
+                <span class="meta-divider">·</span>
+                <span class="category">
+                                        <i class="fas fa-folder"></i>
+                                        {{ article.category.name }}
+                                    </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="article-stats">
+            <div class="stat-item">
+              <i class="far fa-eye"></i>
+              <span>{{ article.quantity }} 阅读</span>
+            </div>
+            <div class="stat-item">
+              <i class="far fa-clock"></i>
+              <span>{{ readTime }} 分钟</span>
+            </div>
+            <div class="stat-item">
+              <i class="far fa-comment"></i>
+              <span>{{ article.commentNum || 0 }} 评论</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- AI简短介绍 -->
+      <div v-if="article.aiDescribe" class="ai-description">
+        <div class="ai-header" @click="isAiDescriptionExpanded = !isAiDescriptionExpanded">
+          <i class="fas fa-robot"></i>
+          <span>AI 摘要</span>
+          <i class="fas" :class="isAiDescriptionExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" style="margin-left:auto;"></i>
+        </div>
+        <transition
+                name="expand"
+                @enter="startTransition"
+                @leave="endTransition"
+                mode="out-in"
+        >
+          <div class="ai-content" v-show="isAiDescriptionExpanded">
+            <div v-html="article.aiDescribe"></div>
+            <div class="ai-description-text">
+              摘要由平台通过智能技术生成
+            </div>
+          </div>
+        </transition>
+      </div>
+
+      <!-- 文章内容 -->
+      <article class="article-content">
+        <div v-html="article.content"></div>
+      </article>
+    </main>
+
+    <!-- 侧边栏目录 -->
+    <aside v-if="showSidebar" class="article-sidebar desktop-only">
+      <div class="toc-container">
+        <div class="toc-header">
+          <div class="title-wrapper">
+            <i class="fas fa-list"></i>
+            <span>目录</span>
+          </div>
+          <div class="progress-wrapper" :class="{ completed: readProgress === 100 }">
+            <i class="fas fa-book-reader"></i>
+            <span class="progress-text">{{ readProgress }}%</span>
+          </div>
+        </div>
+        <div class="toc-content">
+          <div v-for="(item, index) in tocItems" :key="index" class="toc-item" :class="{
+                            'active': activeHeading === item.id,
+                            [`level-${item.level}`]: true
+                        }" @click="scrollToHeading(item.id)">
+            {{ item.text }}
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Vue.js -->
+
+<script src="/js/vue/vue.min.js" th:src="${global.siteInfo.oss + '/js/vue/vue.min.js'}"></script>
+<script>
+  // 创建Vue实例
+  new Vue({
+    el: '#app',
+    data() {
+      return {
+        loading: false,
+        showSidebar: true,
+        isCollapsed: false,
+        activeMenu: '',
+        menuItems: [],
+        article: {
+          title: 'HTML5树形菜单整合示例',
+          avatar: 'https://img.shiyit.com/base/mojian/avatar.png',
+          nickname: '拾壹',
+          createTime: '2024-01-15 10:30:00',
+          category: {
+            name: '前端开发'
+          },
+          quantity: 1234,
+          commentNum: 56,
+          aiDescribe: '<p>这是一个关于如何将Vue组件转换为HTML5页面的教程，主要讲解树形菜单的整合与实现。</p>',
+          content: `
+                            <h2>HTML5树形菜单整合</h2>
+                            <p>本示例展示了如何将Vue组件中的树形菜单功能整合到纯HTML5页面中。</p>
+
+                            <h3>功能特性</h3>
+                            <ul>
+                                <li>多级树形菜单展示</li>
+                                <li>展开/收起功能</li>
+                                <li>菜单项选中状态</li>
+                                <li>响应式设计</li>
+                                <li>编辑功能</li>
+                            </ul>
+
+                            <h3>使用说明</h3>
+                            <p>点击左侧菜单项可以查看对应的内容，点击编辑图标可以编辑菜单项。</p>
+
+                            <pre><code class="javascript">
+// 示例代码
+const menuItems = [
+    {
+        id: 1,
+        title: '一级菜单',
+        icon: 'el-icon-folder',
+        children: [
+            {
+                id: 2,
+                title: '二级菜单',
+                icon: 'el-icon-document',
+                children: [
+                    { id: 3, title: '三级菜单', icon: 'el-icon-tickets' }
+                ]
+            }
+        ]
+    }
+];
+                            </code></pre>
+
+                            <h3>注意事项</h3>
+                            <p>本示例使用了Vue.js，确保相关资源已正确加载。</p>
+                        `
+        },
+        readTime: 5,
+        readProgress: 0,
+        tocItems: [],
+        activeHeading: '',
+        isAiDescriptionExpanded: true
+      }
+    },
+    computed: {
+      currentUrl() {
+        return window.location.href;
+      }
+    },
+    methods: {
+      // 获取菜单数据
+      async getMenuData() {
+        // 模拟API调用
+        this.loading = true;
+        try {
+          // 模拟数据
+          const mockData = [
+            {
+              id: 1,
+              title: 'HTML/CSS',
+              icon: 'el-icon-folder',
+              expanded: true,
+              children: [
+                {
+                  id: 2,
+                  title: 'HTML5',
+                  icon: 'el-icon-document',
+                  expanded: true,
+                  children: [
+                    { id: 3, title: '语义化标签', icon: 'el-icon-tickets' },
+                    { id: 4, title: 'Canvas绘图', icon: 'el-icon-tickets' },
+                    { id: 5, title: 'Web存储', icon: 'el-icon-tickets' }
+                  ]
+                },
+                {
+                  id: 6,
+                  title: 'CSS3',
+                  icon: 'el-icon-document',
+                  expanded: true,
+                  children: [
+                    { id: 7, title: 'Flex布局', icon: 'el-icon-tickets' },
+                    { id: 8, title: 'Grid布局', icon: 'el-icon-tickets' },
+                    { id: 9, title: '动画效果', icon: 'el-icon-tickets' }
+                  ]
+                }
+              ]
+            },
+            {
+              id: 10,
+              title: 'JavaScript',
+              icon: 'el-icon-folder',
+              expanded: true,
+              children: [
+                { id: 11, title: 'ES6新特性', icon: 'el-icon-document' },
+                { id: 12, title: '异步编程', icon: 'el-icon-document' },
+                { id: 13, title: 'DOM操作', icon: 'el-icon-document' }
+              ]
+            },
+            {
+              id: 14,
+              title: 'Vue.js',
+              icon: 'el-icon-folder'
+            },
+            {
+              id: 15,
+              title: 'React',
+              icon: 'el-icon-folder'
+            }
+          ];
+
+          this.menuItems = mockData;
+
+          // 设置默认选中的菜单
+          if (mockData.length > 0) {
+            this.activeMenu = String(mockData[0].id);
+          }
+
+          // 生成目录
+          this.generateToc();
+        } catch (error) {
+          console.error('获取菜单数据失败:', error);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      // 切换子菜单展开/收起
+      toggleSubmenu(menuItem) {
+        this.activeMenu = String(menuItem.id);
+        menuItem.expanded = !menuItem.expanded;
+        this.loadArticle(menuItem);
+      },
+
+      // 处理子菜单点击
+      handleSubMenuClick(menuItem) {
+        this.activeMenu = String(menuItem.id);
+        this.loadArticle(menuItem);
+      },
+
+      // 处理菜单项点击
+      handleMenuClick(menuItem) {
+        this.activeMenu = String(menuItem.id);
+        this.loadArticle(menuItem);
+      },
+
+      // 加载文章
+      loadArticle(menuItem) {
+        // 模拟加载文章
+        this.article.title = menuItem.title;
+        this.article.content = `
+                        <h2>${menuItem.title}</h2>
+                        <p>这是${menuItem.title}的详细内容。</p>
+                        <p>您可以在这里编写关于${menuItem.title}的具体内容。</p>
+                        <ul>
+                            <li>功能特性</li>
+                            <li>使用示例</li>
+                            <li>注意事项</li>
+                        </ul>
+                    `;
+
+        // 更新阅读时间
+        this.readTime = Math.floor(Math.random() * 10) + 1;
+
+        // 重新生成目录
+        this.$nextTick(() => {
+          this.generateToc();
+        });
+      },
+
+      // 处理编辑菜单
+      handleEditMenu(menuItem) {
+        alert(`编辑菜单: ${menuItem.title}`);
+      },
+
+      // 添加菜单
+      addMenu() {
+        alert('添加新菜单');
+      },
+
+      // 生成目录
+      generateToc() {
+        setTimeout(() => {
+          const headings = document.querySelectorAll('.article-content h2, .article-content h3');
+          this.tocItems = Array.from(headings).map((heading, index) => {
+            const id = `heading-${index}`;
+            heading.id = id;
+            return {
+              id: id,
+              text: heading.textContent,
+              level: parseInt(heading.tagName.charAt(1))
+            };
+          });
+
+          // 添加滚动监听
+          this.addScrollListener();
+        }, 100);
+      },
+
+      // 添加滚动监听
+      addScrollListener() {
+        window.addEventListener('scroll', this.updateActiveHeading);
+      },
+
+      // 更新激活标题
+      updateActiveHeading() {
+        // 更新阅读进度
+        this.updateReadProgress();
+
+        // 更新激活的标题
+        if (this.tocItems.length === 0) return;
+
+        const headings = this.tocItems.map(item => document.getElementById(item.id));
+        const header = document.querySelector('.site-header');
+        const headerHeight = header ? header.offsetHeight : 0;
+
+        for (let i = headings.length - 1; i >= 0; i--) {
+          const heading = headings[i];
+          if (heading && heading.getBoundingClientRect().top <= headerHeight + 100) {
+            this.activeHeading = heading.id;
+            break;
+          }
+        }
+      },
+
+      // 更新阅读进度
+      updateReadProgress() {
+        const docEl = document.documentElement;
+        const winHeight = window.innerHeight;
+        const docHeight = docEl.scrollHeight - winHeight;
+        const scrollTop = window.scrollY || docEl.scrollTop;
+        this.readProgress = Math.round((scrollTop / docHeight) * 100);
+      },
+
+      // 滚动到标题
+      scrollToHeading(id) {
+        const element = document.getElementById(id);
+        if (element) {
+          const header = document.querySelector('.site-header');
+          const headerHeight = header ? header.offsetHeight : 0;
+          const targetPosition = element.offsetTop - headerHeight - 20;
+
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+        }
+      },
+
+      // AI摘要展开/收起动画
+      startTransition(element) {
+        element.style.height = 'auto';
+        const height = element.scrollHeight;
+        element.style.height = '0px';
+        element.offsetHeight; // 触发回流
+        element.style.height = height + 'px';
+      },
+
+      endTransition(element) {
+        element.style.height = element.scrollHeight + 'px';
+        element.offsetHeight; // 触发回流
+        element.style.height = '0px';
+      }
+    },
+    mounted() {
+      // 初始化菜单数据
+      this.getMenuData();
+
+      // 初始生成目录
+      this.generateToc();
+
+      // 初始加载第一个菜单的文章
+      if (this.menuItems.length > 0) {
+        this.loadArticle(this.menuItems[0]);
+      }
+    },
+    beforeDestroy() {
+      // 移除滚动监听
+      window.removeEventListener('scroll', this.updateActiveHeading);
+    }
+  });
+</script>
+</body>
+</html>

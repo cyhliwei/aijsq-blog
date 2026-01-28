@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>树形菜单系统</title>
+  <style>
+    [v-cloak] { display: none; }
+    .tree-select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 数据存储 -->
+<script th:inline="javascript">
+  window._pageData = {
+    menus: [[${vo.menus}]],
+    currentUser: null,
+    config: {}
+  };
+</script>
+
+<!-- Vue应用 -->
+<div id="app" v-cloak>
+  <!-- 简单的树形选择器 -->
+  <select
+          v-model="selectedMenuId"
+          class="tree-select"
+          @change="onMenuSelect"
+  >
+    <option value="">请选择文章目录</option>
+    <option v-for="option in flatOptions" :value="option.id" :key="option.id">
+      {{ option.label }}
+    </option>
+  </select>
+
+  <div v-if="selectedMenuId" style="margin-top: 10px;">
+    已选择: {{ selectedMenuTitle }}
+  </div>
+</div>
+
+<!-- 引入 Vue -->
+<script src="/js/vue/vue.min.js" th:src="${global.siteInfo.oss + '/js/vue/vue.min.js'}"></script>
+
+<script>
+  new Vue({
+    el: '#app',
+    data() {
+      return {
+        selectedMenuId: null,
+        menus: []
+      };
+    },
+    computed: {
+      // 将树形数据扁平化
+      flatOptions() {
+        const result = [];
+        const flatten = (nodes, level = 0) => {
+          nodes.forEach(node => {
+            result.push({
+              id: node.id,
+              label: '　'.repeat(level) + node.title
+            });
+            if (node.children && node.children.length > 0) {
+              flatten(node.children, level + 1);
+            }
+          });
+        };
+
+        if (this.menus && this.menus.length > 0) {
+          flatten(this.menus);
+        }
+        return result;
+      },
+
+      // 获取选中的菜单标题
+      selectedMenuTitle() {
+        if (!this.selectedMenuId) return '';
+        const menu = this.flatOptions.find(item => item.id === this.selectedMenuId);
+        return menu ? menu.label.trim() : '';
+      }
+    },
+    created() {
+      // 从全局变量获取数据
+      this.menus = window._pageData?.menus || [];
+    },
+    methods: {
+      onMenuSelect() {
+        console.log('选择的菜单ID:', this.selectedMenuId);
+        // 这里可以执行其他操作
+      }
+    }
+  });
+</script>
+</body>
+</html>

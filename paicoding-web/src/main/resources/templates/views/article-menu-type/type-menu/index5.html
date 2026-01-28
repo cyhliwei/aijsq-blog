@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thymeleaf + Vue 数据获取</title>
+  <style>
+    [v-cloak] { display: none; }
+  </style>
+</head>
+<body>
+<!-- 数据存储 -->
+<script th:inline="javascript">
+  // 将Thymeleaf数据注入到全局变量
+  window._pageData = {
+    menus: [[${vo.menus}]],
+    currentUser: null,
+    config: {}
+  };
+</script>
+
+<!-- Vue应用 -->
+<div id="app" v-cloak>
+  <div class="tree-menu">
+    <tree-node
+            v-for="item in menus"
+            :key="item.id"
+            :node="item"
+            :level="0"
+            @click="selectNode"
+            @edit="editNode"
+            @delete="deleteNode"
+    ></tree-node>
+  </div>
+
+  <div v-if="!menus || menus.length === 0" class="empty-state">
+    暂无菜单数据
+  </div>
+</div>
+
+<!-- Vue组件模板 -->
+<template id="tree-node-template">
+  <div class="tree-node" :style="{ paddingLeft: (level * 20) + 'px' }">
+    <div class="node-content" @click="toggle">
+                <span class="expand-icon" v-if="hasChildren">
+                    {{ expanded ? '▼' : '▶' }}
+                </span>
+      <span class="expand-placeholder" v-else></span>
+
+      <i :class="node.icon"></i>
+      <span class="node-title">{{ node.title }}  <button class="btn-edit" @click.stop="$emit('edit', node)" v-if="node.parentId =='0'" style="margin-left: 120px;">发布文章</button></span>
+
+<!--      <div class="node-actions" v-show="!isCollapsed">-->
+<!--        <button class="btn-edit" @click.stop="$emit('edit', node)">编辑</button>-->
+<!--        <button class="btn-delete" @click.stop="$emit('delete', node)">删除</button>-->
+<!--      </div>-->
+    </div>
+
+    <div class="children-container" v-if="hasChildren && expanded">
+      <tree-node
+              v-for="child in node.children"
+              :key="child.id"
+              :node="child"
+              :level="level + 1"
+              @click="$emit('click', $event)"
+              @edit="$emit('edit', $event)"
+              @delete="$emit('delete', $event)"
+      ></tree-node>
+    </div>
+  </div>
+</template>
+
+<script src="/js/vue/vue.min.js" th:src="${global.siteInfo.oss + '/js/vue/vue.min.js'}"></script>
+<script>
+  // 注册树节点组件
+  Vue.component('tree-node', {
+    template: '#tree-node-template',
+    props: {
+      node: Object,
+      level: Number,
+      isCollapsed: {
+        type: Boolean,
+        default: false
+      }
+    },
+    data() {
+      return {
+        expanded: this.level < 2 // 默认展开前两级
+      };
+    },
+    computed: {
+      hasChildren() {
+        return this.node.children && this.node.children.length > 0;
+      }
+    },
+    methods: {
+      toggle() {
+        if (this.hasChildren) {
+          this.expanded = !this.expanded;
+        }
+        this.$emit('click', this.node);
+      }
+    }
+  });
+
+  // 创建Vue实例
+  new Vue({
+    el: '#app',
+    data: {
+      menus: [],
+      selectedNode: null,
+      isCollapsed: false
+    },
+    created() {
+      // 从全局变量获取Thymeleaf数据
+      this.menus = window._pageData?.menus || [];
+
+      // 如果没有数据，可以尝试从其他方式获取
+      if (!this.menus || this.menus.length === 0) {
+        this.tryGetDataFromOtherSources();
+      }
+    },
+    methods: {
+      // 尝试从其他来源获取数据
+      tryGetDataFromOtherSources() {
+        // 1. 从data属性获取
+        const dataElement = document.querySelector('[data-menus]');
+        if (dataElement) {
+          try {
+            const menusJson = dataElement.getAttribute('data-menus');
+            this.menus = JSON.parse(menusJson || '[]');
+            return;
+          } catch (e) {
+            console.error('解析data-menus失败:', e);
+          }
+        }
+
+        // 2. 从隐藏的input获取
+        const hiddenInput = document.getElementById('menus-data');
+        if (hiddenInput && hiddenInput.value) {
+          try {
+            this.menus = JSON.parse(hiddenInput.value);
+          } catch (e) {
+            console.error('解析隐藏input数据失败:', e);
+          }
+        }
+      },
+
+      selectNode(node) {
+        this.selectedNode = node;
+        console.log('选中节点:', node);
+        // 这里可以加载对应内容
+      },
+
+      editNode(node) {
+        console.log('编辑节点:', node);
+        alert(`编辑: ${node.title}`);
+        // 这里实现编辑逻辑
+      },
+
+      deleteNode(node) {
+        if (confirm(`确定删除 "${node.title}" 吗？`)) {
+          console.log('删除节点:', node);
+          // 这里实现删除逻辑
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  .tree-menu {
+    font-family: Arial, sans-serif;
+    max-width: 400px;
+    margin: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+
+  .tree-node {
+    margin: 4px 0;
+  }
+
+  .node-content {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+  }
+
+  .node-content:hover {
+    background-color: #f5f5f5;
+  }
+
+  .expand-icon, .expand-placeholder {
+    width: 16px;
+    margin-right: 8px;
+    text-align: center;
+  }
+
+  .node-title {
+    flex: 1;
+    margin-left: 8px;
+  }
+
+  .node-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .btn-edit, .btn-delete {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .btn-edit {
+    background-color: #e6f7ff;
+    color: #1890ff;
+  }
+
+  .btn-delete {
+    background-color: #fff1f0;
+    color: #ff4d4f;
+  }
+
+  .children-container {
+    margin-left: 20px;
+    border-left: 1px dashed #e0e0e0;
+  }
+
+  .empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+  }
+</style>
+</body>
+</html>
